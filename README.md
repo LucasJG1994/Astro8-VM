@@ -4,7 +4,7 @@
 #How to use
  1. Open up your command prompt and type
  ```
- Astro8.exe <filename>.arm
+ Astro8.exe <filename>.asm
  ```
  within the directory the .exe file resides in.  
  
