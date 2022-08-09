@@ -1,9 +1,12 @@
 #include "scanner.h"
 #include "tokens.h"
+#include <iostream>
 
 struct scanner {
 	const char*  cur;
 	const char*  start;
+	const char*  offset;
+	size_t		 size;
 	unsigned int line;
 };
 
@@ -14,14 +17,16 @@ String*		 S_LEXEME = nullptr;
 unsigned int S_LINE;
 unsigned int S_TYPE;
 
-void scan_init(const char* src) {
-	scan.cur   = src;
-	scan.start = src;
-	scan.line = 1;
+void scan_init(file* f) {
+	scan.cur    = f->bytes;
+	scan.start  = f->bytes;
+	scan.offset = f->bytes;
+	scan.size   = f->size;
+	scan.line   = 1;
 }
 
 static bool scan_end() {
-	return *scan.cur == 0;
+	return ((scan.cur - scan.offset) >= (scan.size - 1)) || *scan.cur == 0;
 }
 
 static void scan_adv() {
@@ -53,12 +58,13 @@ static bool is_hex() {
 }
 
 static void make_token(token_type type) {
-	S_LINE   = scan.line;
-	S_TYPE   = type;
+	S_LINE = scan.line;
+	S_TYPE = type;
 }
 
 scanner_state scan_advance() {
 	while (!scan_end()) {
+		std::cout << "PASS...\n";
 		switch (*scan.cur) {
 			case '0': {
 				scan_adv();
@@ -69,6 +75,7 @@ scanner_state scan_advance() {
 						scan_adv();
 					}
 
+					string_close(S_LEXEME);
 					S_LEXEME = string_init(scan.start, (scan.cur - scan.start));
 					if (S_LEXEME == nullptr) {
 						return SCAN_ERR;
@@ -84,6 +91,7 @@ scanner_state scan_advance() {
 						scan_adv();
 					}
 
+					string_close(S_LEXEME);
 					S_LEXEME = string_init(scan.start, (scan.cur - scan.start));
 					if (S_LEXEME == nullptr) {
 						return SCAN_ERR;
@@ -92,6 +100,7 @@ scanner_state scan_advance() {
 					make_token(ADDR_DEC);
 					return SCAN_OK;
 				}
+				return SCAN_ERR;
 			}
 			case ';':
 				while(!scan_match('\n')) scan_adv();
@@ -145,6 +154,8 @@ scanner_state scan_advance() {
 		}
 		scan_adv();
 	}
+	std::cout << "END\n";
+	string_close(S_LEXEME);
 	S_LEXEME = nullptr;
 	S_LINE   = 0;
 	S_TYPE   = T_EOF;

@@ -1,3 +1,4 @@
+;This is a comment
 ldw 0d65534
 stlge 0d16529
 ldw 0d61439
@@ -11,4 +12,3 @@ ldlge 0d16539
 add
 stlge 0d16539
 jmp 0d4
-

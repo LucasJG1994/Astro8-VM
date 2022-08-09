@@ -2,12 +2,13 @@
 #define __scanner__h
 
 #include "String.h"
+#include "file.h"
 
 enum scanner_state {
 	SCAN_OK, SCAN_ERR
 };
 
-void		  scan_init(const char* src);
+void		  scan_init(file* f);
 scanner_state scan_advance();
 
 extern String*		S_LEXEME;

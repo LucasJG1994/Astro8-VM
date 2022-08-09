@@ -24,7 +24,7 @@ void engine_init(const char* file_name) {
 
 	std::cout << "Loaded file...\n";
 
-	scan_init(f->bytes);
+	scan_init(f);
 	parser_init();
 
 	std::cout << "Init scanner and parser...\n";

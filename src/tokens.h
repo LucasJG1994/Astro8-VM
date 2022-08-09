@@ -32,7 +32,7 @@ enum token_type {
 	ADDR_HEX,
 	ADDR_DEC,
 
-	T_EOF = -1
+	T_EOF
 };
 
 #endif
