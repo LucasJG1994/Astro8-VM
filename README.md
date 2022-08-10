@@ -1,7 +1,7 @@
 # Astro8-VM
  Original Project: https://github.com/sam-astro/Astro8-Computer by AstroSam  
  
-#How to use
+# How to use
  1. Open up your command prompt and type
  ```
  Astro8.exe <filename>.asm
@@ -10,7 +10,7 @@
  
  **Armstrong is not supported**  
  
-#Assembler Instructions
+# Assembler Instructions
  1. NOP
  2. AIN
  3. BIN
@@ -38,7 +38,7 @@
  25. SWPC
  26. HLT  
  
- **Instructions that require more than 12 bits do not need to use (SET/HERE) instructions. Just add the number after the instructions**  
+ **Instructions that require more than 12 bits do not need to use (SET/HERE) instructions. Just add the number after the instructions. EDIT: You can use SET specifically for injecting values into the ROM before being loaded into the CPU RAM.**  
  
  **Number systems supported**
  1. Hex
