@@ -27,7 +27,6 @@ static bool parser_match(token_type type) {
 ROM* parser_start() {
 	ROM* rom = rom_init();
 	while (!parser_match(T_EOF)) {
-		std::cout << S_TYPE << std::endl;
 		switch(S_TYPE){
 			case NOP: rom->store(NOP); rom->store(0); parser_adv(); break;
 			case AIN:
@@ -90,13 +89,7 @@ ROM* parser_start() {
 				parser_adv();
 				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
 				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				if (S_LEXEME != nullptr) {
-					std::cout << S_LEXEME->bytes << std::endl;
-				}
 				parser_adv();
-				if (S_LEXEME != nullptr) {
-					std::cout << S_LEXEME->bytes << std::endl;
-				}
 				break;
 			case JMPZ:
 				rom->store(JMPZ);
@@ -139,6 +132,21 @@ ROM* parser_start() {
 			case SWP: rom->store(SWP); rom->store(0); parser_adv(); break;
 			case SWPC: rom->store(SWPC); rom->store(0); parser_adv(); break;
 			case HLT: rom->store(HLT); rom->store(0); parser_adv(); break;
+			case SET:{
+				int addr, data;
+				parser_adv();
+
+				if (parser_match(ADDR_HEX)) addr = S_LEXEME->to_hex();
+				if (parser_match(ADDR_DEC)) addr = S_LEXEME->to_int();
+				parser_adv();
+
+				if (parser_match(ADDR_HEX)) data = S_LEXEME->to_hex();
+				if (parser_match(ADDR_DEC)) data = S_LEXEME->to_int();
+				parser_adv();
+
+				rom->store(addr, data);
+				break;
+			}
 			default: {
 				std::cout << "Parser Error... " << S_LINE << " " << " " << S_TYPE << std::endl;
 				rom_close(rom);

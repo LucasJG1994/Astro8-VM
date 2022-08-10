@@ -1,6 +1,5 @@
 #include "scanner.h"
 #include "tokens.h"
-#include <iostream>
 
 struct scanner {
 	const char*  cur;
@@ -64,7 +63,6 @@ static void make_token(token_type type) {
 
 scanner_state scan_advance() {
 	while (!scan_end()) {
-		std::cout << "PASS...\n";
 		switch (*scan.cur) {
 			case '0': {
 				scan_adv();
@@ -117,9 +115,7 @@ scanner_state scan_advance() {
 
 				string_close(S_LEXEME);
 				S_LEXEME = string_init(scan.start, (scan.cur - scan.start));
-				if (S_LEXEME == nullptr) {
-					return SCAN_ERR;
-				}
+				if (S_LEXEME == nullptr) break;
 
 				S_LEXEME->lower();
 
@@ -149,12 +145,12 @@ scanner_state scan_advance() {
 				else if (*S_LEXEME == "swp")	{ make_token(SWP);    return SCAN_OK; }
 				else if (*S_LEXEME == "swpc")	{ make_token(SWPC);   return SCAN_OK; }
 				else if (*S_LEXEME == "hlt")	{ make_token(HLT);    return SCAN_OK; }
+				else if (*S_LEXEME == "set")    { make_token(SET);    return SCAN_OK; }
 
 				return SCAN_ERR;
 		}
 		scan_adv();
 	}
-	std::cout << "END\n";
 	string_close(S_LEXEME);
 	S_LEXEME = nullptr;
 	S_LINE   = 0;

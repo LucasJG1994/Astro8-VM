@@ -18,3 +18,7 @@ void ROM::store(uint16_t data) {
 		bytes[DP++] = data;
 	}
 }
+
+void ROM::store(uint16_t addr, uint16_t data) {
+	bytes[addr] = data;
+}

@@ -9,6 +9,7 @@ struct ROM {
 	size_t		 size = 16382;
 
 	void store(uint16_t data);
+	void store(uint16_t addr, uint16_t data);
 };
 
 ROM* rom_init();

@@ -1,4 +1,5 @@
 ;This is a comment
+set 0d28 0d65534
 ldw 0d65534
 stlge 0d16529
 ldw 0d61439

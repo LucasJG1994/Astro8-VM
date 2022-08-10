@@ -28,6 +28,7 @@ enum token_type {
 	SWP ,
 	SWPC,
 	HLT,
+	SET,
 
 	ADDR_HEX,
 	ADDR_DEC,
