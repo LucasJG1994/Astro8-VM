@@ -22,70 +22,69 @@ CL -> flag is clear
 
 IP -> instruction pointer
 
-1.	NOP				No Operation
-	
-2.	AIN 	N		RAM( N ) -> A
-3.	AIN 	N, B	RAM( N + B ) -> A
-4.	AIN		N, C	RAM( N + C ) -> A
+NOP ==> No Operation  
+AIN N ==> RAM( N ) -> A  
+AIN N, B ==> RAM( N + B ) -> A  
+AIN N, C ==> RAM( N + C ) -> A  
 
-5.	AIN.L 	N		LOCAL( N ) -> A
-6.	AIN.L	N, B	LOCAL( N + B ) -> A
-7.	AIN.L	N, C	LOCAL( N + C ) -> A
+AIN.L N ==> LOCAL( N ) -> A  
+AIN.L N, B ==> LOCAL( N + B ) -> A  
+AIN.L N, C ==> LOCAL( N + C ) -> A  
 
-8.	BIN		N		RAM( N ) -> B
-9.	BIN.L	N		LOCAL( N ) -> B
+BIN N ==> RAM( N ) -> B  
+BIN.L N ==> LOCAL( N ) -> B  
 
-10.	CIN		N		RAM( N ) -> C
-11.	CIN.L	N		LOCAL( N ) -> C
+CIN N ==> RAM( N ) -> C  
+CIN.L N ==> LOCAL( N ) -> C  
 
-12.	LDIA	N		N -> A
-13.	LDIB	N		N -> B
-14.	LDIC	N		N -> C
+LDIA N ==> N -> A  
+LDIB N ==> N -> B  
+LDIC N ==> N -> C  
 
-15.	INA     		A = A + 1
-16.	INB     		B = B + 1
-17.	INC     		C = C + 1
+INA ==> A = A + 1  
+INB ==> B = B + 1  
+INC ==> C = C + 1  
 
-18.	RDEXP   		EXP -> A
-19.	WREXP   		A -> EXP
+RDEXP ==> EXP -> A  
+WREXP ==> A -> EXP  
 
-20.	STA		N		A -> RAM( N )
-21.	STA		N, B	A -> RAM( N + B )
-22.	STA		N, C	A -> RAM( N + C )
+STA N ==> A -> RAM( N )  
+STA N, B ==> A -> RAM( N + B )  
+STA N, C ==> A -> RAM( N + C )  
 
-23.	STA.L	N		A -> LOCAL( N )
-24.	STA.L	N, B	A -> LOCAL( N + B )
-25.	STA.L	N, C	A -> LOCAL( N + C )
+STA.L N ==> A -> LOCAL( N )  
+STA.L N, B ==> A -> LOCAL( N + B )  
+STA.L N, C ==> A -> LOCAL( N + C )  
 
-26.	STB		N		B -> RAM( N )
-27.	STB.L	N		B -> LOCAL( N )
+STB N ==> B -> RAM( N )  
+STB.L N ==> B -> LOCAL( N )  
 
-28.	STC		N		C -> RAM( N )
-29.	STC.L	N		C -> LOCAL( N )
+STC N ==> C -> RAM( N )  
+STC.L N ==> C -> LOCAL( N )  
 
-30.	PHA     		A -> STACK
-31.	PLA     		STACK -> A
-32.	PHF     		FLAG -> STACK
-33.	PLF     		STACK -> FLAG
+PHA ==> A -> STACK  
+PLA ==> STACK -> A  
+PHF ==> FLAG -> STACK  
+PLF ==> STACK -> FLAG  
 
-34.	ADD     		A = A + B
-35.	SUB     		A = A - B
-36.	MULT    		A = A x B
-37.	DIV     		A = A / B
+ADD ==> A = A + B  
+SUB ==> A = A - B  
+MULT ==> A = A x B  
+DIV ==> A = A / B  
 
-38.	JMP		N		N -> IP
-39.	JMPZ	N		IF ZE : N -> IP
-40.	JMPC	N		IF CA : N -> IP
-41.	JCLR	N		IF CL : N -> IP
-42.	JREG    N		A -> IP
+JMP N ==> N -> IP  
+JMPZ N ==> IF ZE : N -> IP  
+JMPC N ==> IF CA : N -> IP  
+JCLR N ==> IF CL : N -> IP  
+JREG N ==> A -> IP  
 
-43.	CALL	N		IP -> STACK : N -> IP
-44.	RET				STACK -> IP
+CALL N ==> IP -> STACK : N -> IP  
+RET ==> STACK -> IP  
 
-45.	SWP				A -> C : B -> A : C -> B
-46.	SWPC			A -> B : C -> A : B -> C
+SWP ==> A -> C : B -> A : C -> B  
+SWPC ==> A -> B : C -> A : B -> C  
 
-47.	HLT				Stop Execution
+HLT ==> Stop Execution  
 
  **Massive change to the CPU instructions and operand deem this version incompatible with the original Astro-8 Emulator. This is instead a custom version with my own instructions and some Astro-8 instructions.**  
  
