@@ -22,7 +22,7 @@ CL -> flag is clear
 
 IP -> instruction pointer  
 
-1.	NOP             No Operation
+1.	NOP - No Operation
 	
 2.	AIN     N       RAM( N ) -> A
 3.	AIN     N, B    RAM( N + B ) -> A
