@@ -5,11 +5,13 @@
 #include <string>
 
 enum token_type {
-	REG_B = 42,
+	REG_B = NOP + 1,
 	REG_C,
 	ADDR_HEX,
 	ADDR_DEC,
 	COMMA,
+	ASSIGN,
+	LABEL,
 	T_EOF
 };
 

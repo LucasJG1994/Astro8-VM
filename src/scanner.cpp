@@ -49,6 +49,11 @@ static std::map<std::string, int> keywords = {
 	{"mult", MULT},
 	{"div", DIV},
 
+	{"and", AND},
+	{"or", OR},
+	{"not", NOT},
+	{"xor", XOR},
+
 	{"jmp", JMP},
 	{"jmpz", JMPZ},
 	{"jmpc", JMPC},
@@ -146,6 +151,7 @@ static int scan_get_dec();
 
 static void scan_number(std::queue<token>* List);
 static void scan_comma(std::queue<token>* List);
+static void scan_assign(std::queue<token>* List);
 static void scan_keyword(std::queue<token>* List);
 static void scan_comment();
 static void scan_newline();
@@ -157,6 +163,7 @@ std::queue<token>* scan_tokenize() {
 		switch (*scan.cur) {
 			case '0': scan_number(List); break;
 			case ',': scan_comma(List); break;
+			case '=': scan_assign(List); break;
 			case ';': scan_comment(); break;
 			case ' ': scan_adv(); break;
 			case '\t':scan_adv(); break;
@@ -217,6 +224,11 @@ static void scan_comma(std::queue<token>* List) {
 	List->push({",", COMMA, scan.line, 0});
 }
 
+static void scan_assign(std::queue<token>* List) {
+	scan_adv();
+	List->push({"=", ASSIGN, scan.line, 0});
+}
+
 static void scan_keyword(std::queue<token>* List) {
 	scan.start = scan.cur;
 	while(is_alpha() && !scan_end()) scan_adv();
@@ -226,8 +238,8 @@ static void scan_keyword(std::queue<token>* List) {
 
 	*lex = to_lower(*lex);
 
-	if(keywords.find(*lex) == keywords.end()){ delete lex; scan_error(List); }
-	List->push({*lex, keywords[*lex], scan.line, 0});
+	if(keywords.find(*lex) == keywords.end()) List->push({*lex, LABEL, scan.line, 0});
+	else List->push({*lex, keywords[*lex], scan.line, 0});
 	delete lex;
 }
 

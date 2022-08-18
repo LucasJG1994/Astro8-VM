@@ -1,11 +1,15 @@
 #include "parser.h"
 #include "tokens.h"
 #include <queue>
+#include <map>
+#include <stack>
 #include <iostream>
 
 parser_state par_state;
 
 static std::queue<token>* token_stream;
+static std::map<std::string, int> def_labels;
+static std::map<std::string, std::stack<int>> undef_labels;
 static token cur;
 static ROM* rom = rom_init();
 
@@ -18,6 +22,10 @@ void parser_init(std::queue<token>* List) {
 static void parser_adv() {
 	cur = token_stream->front();
 	token_stream->pop();
+}
+
+static int parser_peek() {
+	return token_stream->front().type;
 }
 
 static bool parser_match(int type) {
@@ -34,6 +42,11 @@ static void parser_error() {
 	std::cout << "Parser Error:\n";
 	std::cout << cur.to_string();
 	throw 0;
+}
+
+static void parser_consume(int type) {
+	if (parser_match(type)) parser_adv();
+	else parser_error();
 }
 
 static void nop(ROM* rom);
@@ -73,6 +86,11 @@ static void sub(ROM* rom);
 static void mult(ROM* rom);
 static void div(ROM* rom);
 
+static void _and(ROM* rom);
+static void _or(ROM* rom);
+static void _not(ROM* rom);
+static void _xor(ROM* rom);
+
 static void jmp(ROM* rom);
 static void jmpz(ROM* rom);
 static void jmpc(ROM* rom);
@@ -86,6 +104,10 @@ static void swp(ROM* rom);
 static void swpc(ROM* rom);
 
 static void hlt(ROM* rom);
+
+static void label(ROM* rom);
+static int get_label(ROM* rom);
+static void def_label(ROM* rom);
 
 static int get_data() {
 	if (parser_match(ADDR_HEX)) {
@@ -104,6 +126,8 @@ static int get_data() {
 ROM* parser_start() {
 	while (!parser_match(T_EOF)) {
 		switch(cur.type){
+			case LABEL: label(rom); break;
+
 			case NOP: nop(rom); break;
 
 			case AIN: ain(rom); break;
@@ -167,7 +191,9 @@ static void nop(ROM* rom) {
 
 static void ain(ROM* rom) {
 	parser_adv();
-	int data = get_data();
+	int data;
+	if(parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
 
 	if (parser_match(COMMA)) {
 		parser_adv();
@@ -189,7 +215,9 @@ static void ain(ROM* rom) {
 
 static void ain_l(ROM* rom) {
 	parser_adv();
-	int data = get_data();
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
 
 	if (parser_match(COMMA)) {
 		parser_adv();
@@ -211,22 +239,34 @@ static void ain_l(ROM* rom) {
 
 static void bin(ROM* rom) {
 	parser_adv();
-	rom->store(BIN, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(BIN, data);
 }
 
 static void bin_l(ROM* rom) {
 	parser_adv();
-	rom->store(BIN_L, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(BIN_L, data);
 }
 
 static void cin(ROM* rom) {
 	parser_adv();
-	rom->store(CIN, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(CIN, data);
 }
 
 static void cin_l(ROM* rom) {
 	parser_adv();
-	rom->store(CIN_L, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(CIN_L, data);
 }
 
 static void ldia(ROM* rom) {
@@ -271,7 +311,9 @@ static void wrexp(ROM* rom) {
 
 static void sta(ROM* rom) {
 	parser_adv();
-	int data = get_data();
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
 
 	if (parser_match(COMMA)) {
 		parser_adv();
@@ -293,7 +335,9 @@ static void sta(ROM* rom) {
 
 static void sta_l(ROM* rom) {
 	parser_adv();
-	int data = get_data();
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
 
 	if (parser_match(COMMA)) {
 		parser_adv();
@@ -315,22 +359,34 @@ static void sta_l(ROM* rom) {
 
 static void stb(ROM* rom) {
 	parser_adv();
-	rom->store(STB, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(STB, data);
 }
 
 static void stb_l(ROM* rom) {
 	parser_adv();
-	rom->store(STB_L, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(STB_L, data);
 }
 
 static void stc(ROM* rom) {
 	parser_adv();
-	rom->store(STC, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(STC, data);
 }
 
 static void stc_l(ROM* rom) {
 	parser_adv();
-	rom->store(STC_L, get_data());
+	int data;
+	if (parser_match(LABEL)) data = get_label(rom);
+	else data = get_data();
+	rom->store(STC_L, data);
 }
 
 static void pha(ROM* rom) {
@@ -373,23 +429,59 @@ static void div(ROM* rom) {
 	rom->store(DIV);
 }
 
+static void _and(ROM* rom) {
+	parser_adv();
+	rom->store(AND);
+}
+
+static void _or(ROM* rom) {
+	parser_adv();
+	rom->store(OR);
+}
+
+static void _not(ROM* rom) {
+	parser_adv();
+	rom->store(NOT);
+}
+
+static void _xor(ROM* rom) {
+	parser_adv();
+	rom->store(XOR);
+}
+
 static void jmp(ROM* rom) {
 	parser_adv();
+	if (parser_match(LABEL)) {
+		rom->store(JMP, get_label(rom));
+		return;
+	}
 	rom->store(JMP, get_data());
 }
 
 static void jmpz(ROM* rom) {
 	parser_adv();
+	if (parser_match(LABEL)) {
+		rom->store(JMPZ, get_label(rom));
+		return;
+	}
 	rom->store(JMPZ, get_data());
 }
 
 static void jmpc(ROM* rom) {
 	parser_adv();
+	if (parser_match(LABEL)) {
+		rom->store(JMPC, get_label(rom));
+		return;
+	}
 	rom->store(JMPC, get_data());
 }
 
 static void jclr(ROM* rom) {
 	parser_adv();
+	if (parser_match(LABEL)) {
+		rom->store(JCLR, get_label(rom));
+		return;
+	}
 	rom->store(JCLR, get_data());
 }
 
@@ -400,6 +492,10 @@ static void jreg(ROM* rom) {
 
 static void call(ROM* rom) {
 	parser_adv();
+	if (parser_match(LABEL)) {
+		rom->store(CALL, get_label(rom));
+		return ;
+	}
 	rom->store(CALL, get_data());
 }
 
@@ -421,4 +517,52 @@ static void swpc(ROM* rom) {
 static void hlt(ROM* rom) {
 	parser_adv();
 	rom->store(HLT);
+}
+
+static void label(ROM* rom) {
+	if(parser_peek() == ASSIGN){ def_label(rom); return; }
+
+	if (undef_labels.find(cur.lexeme) == undef_labels.end()) {
+		if (def_labels.find(cur.lexeme) == def_labels.end()) {
+			def_labels[cur.lexeme] = rom->get_IP();
+		}
+		else{} // Do nothing
+	}
+	else {
+		std::stack<int> IPs = undef_labels[cur.lexeme];
+		while (IPs.empty() == 0) {
+			int IP = IPs.top(); IPs.pop();
+			rom->insert(IP, rom->get_IP());
+		}
+		undef_labels.erase(cur.lexeme);
+		def_labels[cur.lexeme] = rom->get_IP();
+	}
+	parser_adv();
+}
+
+static int get_label(ROM* rom) {
+	if (def_labels.find(cur.lexeme) == def_labels.end()) {
+		if (undef_labels.find(cur.lexeme) == undef_labels.end()) {
+			std::stack<int> IPs;
+			IPs.push(rom->get_IP());
+			undef_labels[cur.lexeme] = IPs;
+		}
+		else {
+			std::stack<int> IPs = undef_labels[cur.lexeme];
+			IPs.push(rom->get_IP());
+			undef_labels[cur.lexeme] = IPs;
+		}
+		parser_adv();
+		return 0;
+	}
+	int IP = def_labels[cur.lexeme];
+	parser_adv();
+	return IP;
+}
+
+static void def_label(ROM* rom) {
+	std::string label = cur.lexeme;
+	parser_adv();
+	parser_consume(ASSIGN);
+	def_labels[label] = get_data();
 }

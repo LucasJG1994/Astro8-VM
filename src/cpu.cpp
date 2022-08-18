@@ -19,8 +19,8 @@ typedef uint16_t u16;
 #define VRAM_SIZE 4
 
 enum cpu_masks {
-	OPCODE_MASK = 0x00ff,
-	LB_MASK     = 0x0fff,
+	OPCODE_MASK = 0xff0000,
+	DATA_MASK   = 0x00ffff,
 	CARRY		= 0x0002,
 	ZERO		= 0x0001
 };
@@ -183,7 +183,7 @@ static std::vector<u16> STACK;
 #define PUSH(V) STACK.push_back(V)
 #define POP STACK.back(); STACK.pop_back()
 
-static u16 INS[16383] = { 0 };
+static unsigned int INS[0xFFFF] = { 0 };
 static u16 CLS[0xFF][0xFF] = { 0 };
 static u16 RAM[0xFFFF] = { 0 };
 static u16 IP = 0;
@@ -242,45 +242,46 @@ static void decoder() {
 
 	if(history.size() > 255) history.erase(history.begin());
 
-	u16 instruction = INS[IP++];
+	unsigned int instruction = INS[IP++];
 
-	u16 opcode	= instruction & OPCODE_MASK;
+	u16 opcode	= (instruction & OPCODE_MASK) >> 16;
+	u16 data    = (instruction & DATA_MASK)   >> 0;
 
 	switch (opcode) {
-		case NOP	: IP++; break;
+		case NOP	: break;
 
-		case AIN	: A = RAM[ INS[IP++] ]; break;
-		case AIN_L	: A = CLS[SP][ INS[IP++] & 0xFF ]; break;
-		case AIN_B	: A = RAM[ INS[IP++] + B ]; break;
-		case AIN_L_B: A = CLS[SP][ (INS[IP++] & 0xFF) + B ]; break;
-		case AIN_C	: A = RAM[ INS[IP++] + C ]; break;
-		case AIN_L_C: A = CLS[SP][ (INS[IP++] & 0xFF) + C ]; break;
-		case BIN	: B = RAM[ INS[IP++] ]; break;
-		case BIN_L	: B = CLS[SP][ INS[IP++] & 0xFF ]; break;
-		case CIN	: C = RAM[ INS[IP++] ]; break;
-		case CIN_L	: C = CLS[SP][ INS[IP++] & 0xFF ]; break;
+		case AIN	: A = RAM[ data ]; break;
+		case AIN_L	: A = CLS[SP][ data & 0xFF ]; break;
+		case AIN_B	: A = RAM[ data + B ]; break;
+		case AIN_L_B: A = CLS[SP][ (data & 0xFF) + B ]; break;
+		case AIN_C	: A = RAM[ data + C ]; break;
+		case AIN_L_C: A = CLS[SP][ (data & 0xFF) + C ]; break;
+		case BIN	: B = RAM[ data ]; break;
+		case BIN_L	: B = CLS[SP][ data & 0xFF ]; break;
+		case CIN	: C = RAM[ data ]; break;
+		case CIN_L	: C = CLS[SP][ data & 0xFF ]; break;
 
-		case LDIA	: A = INS[IP++]; break;
-		case LDIB	: B = INS[IP++]; break;
-		case LDIC	: C = INS[IP++]; break;
+		case LDIA	: A = data; break;
+		case LDIB	: B = data; break;
+		case LDIC	: C = data; break;
 
-		case INA	: A++; IP++; break;
-		case INB	: B++; IP++; break;
-		case INC	: C++; IP++; break;
+		case INA	: A++; break;
+		case INB	: B++; break;
+		case INC	: C++; break;
 
 		//case RDEXP	: A = key_mapping[ExpansionPort]; IP++; break;
 		//case WREXP	: ExpansionPort = A; IP++; break;
 
-		case STA	: RAM[ INS[IP++] ] = A; break;
-		case STA_L	: CLS[SP][ INS[IP++] & 0xFF ] = A; break;
-		case STA_B	: RAM[ INS[IP++] + B] = A; break;
-		case STA_L_B: CLS[SP][ (INS[IP++] & 0xFF) + B ] = A; break;
-		case STA_C	: RAM[ INS[IP++] + C] = A; break;
-		case STA_L_C: CLS[SP][ (INS[IP++] & 0xFF) + C ] = A; break;
-		case STB	: RAM[ INS[IP++] ] = B; break;
-		case STB_L	: CLS[SP][ INS[IP++] & 0xFF ] = B; break;
-		case STC	: RAM[ INS[IP++] ] = C; break;
-		case STC_L	: CLS[SP][ INS[IP++] & 0xFF ] = C; break;
+		case STA	: RAM[ data ] = A; break;
+		case STA_L	: CLS[SP][ data & 0xFF ] = A; break;
+		case STA_B	: RAM[ data + B] = A; break;
+		case STA_L_B: CLS[SP][ (data & 0xFF) + B ] = A; break;
+		case STA_C	: RAM[ data + C] = A; break;
+		case STA_L_C: CLS[SP][ (data & 0xFF) + C ] = A; break;
+		case STB	: RAM[ data ] = B; break;
+		case STB_L	: CLS[SP][ data & 0xFF ] = B; break;
+		case STC	: RAM[ data ] = C; break;
+		case STC_L	: CLS[SP][ data & 0xFF ] = C; break;
 
 		case PHA	: PUSH(A); break;
 		case PLA	: A = POP; break;
@@ -291,40 +292,56 @@ static void decoder() {
 			A += B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
-			IP++;
 			break;
 		case SUB:
 			A -= B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
-			IP++;
 			break;
 		case MULT:
 			A *= B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
-			IP++;
 			break;
 		case DIV:
-			flag = 0;
 			if(B == 0){ flag |= ZERO; break;}
 			A /= B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
-			IP++;
+			break;
+		
+		case AND:
+			A &= B;
+			flag |= (A == 0)	? ZERO: 0;
+			flag |= (A & 0x8000)? CARRY:0;
+			break;
+		case OR:
+			A |= B;
+			flag |= (A == 0) ? ZERO : 0;
+			flag |= (A & 0x8000) ? CARRY : 0;
+			break;
+		case NOT:
+			A = ~A;
+			flag |= (A == 0) ? ZERO : 0;
+			flag |= (A & 0x8000) ? CARRY : 0;
+			break;
+		case XOR:
+			A ^= B;
+			flag |= (A == 0) ? ZERO : 0;
+			flag |= (A & 0x8000) ? CARRY : 0;
 			break;
 
-		case JMP	: IP = INS[ IP ] * 2; break;
-		case JMPZ	: IP = (flag & ZERO) ? INS[ IP ] * 2: IP + 1; break;
-		case JMPC	: IP = (flag & CARRY)? INS[ IP ] * 2: IP + 1; break;
-		case JCLR	: IP = (flag == 0)	 ? INS[ IP ] * 2: IP + 1; break;
-		case JREG	: IP = A * 2; break;
+		case JMP	: IP = data; break;
+		case JMPZ	: IP = (flag & ZERO) ? data: IP; break;
+		case JMPC	: IP = (flag & CARRY)? data: IP; break;
+		case JCLR	: IP = (flag == 0)	 ? data: IP; break;
+		case JREG	: IP = A; break;
 
 		case CALL: 
 			SP++; 
-			CLS[SP][ 0 ] = IP + 1;
+			CLS[SP][ 0 ] = IP;
 			CLS[SP][ 1 ] = flag;
-			IP = INS[ IP ] * 2;
+			IP = data;
 			break;
 		case RET: 
 			IP = CLS[SP][ 0 ]; 
@@ -336,21 +353,20 @@ static void decoder() {
 			C = A;
 			A = B;
 			B = C;
-			IP++;
 			break;
 		case SWPC:
 			B = A;
 			A = C;
 			C = B;
-			IP++;
 			break;
 
-		case HLT: 
+		case HLT: {
 			cs = CPU_HLT;
 			std::cout << "CPU has halted...\n";
 			history_index = history.size() - 1;
 			cpu_display();
-			break;
+			return;
+		}
 	}
 	}
 }

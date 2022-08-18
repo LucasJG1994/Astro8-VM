@@ -1,13 +1,24 @@
-;setup variable
-ldib 0d0
-ldia 0d13
-sta  0d0
+color = 0d0
+screen = 0d65278
 
-;loop
-ain 0d0
-sta 0d65278, b
-inb
-ldia 0d256
-sub
-jclr 0d3
-hlt
+	;setup variable
+	ldib 0d0
+	ldia 0d13
+	sta  color
+	
+	;loop
+	
+	call draw
+	hlt
+	
+	
+draw
+	ain color
+	sta screen, b
+	inb
+	ldia 0d256
+	sub
+	jclr draw
+	ret
+
+

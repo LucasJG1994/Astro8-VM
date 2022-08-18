@@ -2,7 +2,7 @@
 #define __cpu_opcodes__h
 
 enum cpu_opcodes {
-	NOP,
+	HLT,
 
 	AIN,
 	AIN_L,
@@ -47,6 +47,11 @@ enum cpu_opcodes {
 	MULT,
 	DIV,
 
+	AND,
+	OR,
+	NOT,
+	XOR,
+
 	JMP,
 	JMPZ,
 	JMPC,
@@ -59,7 +64,7 @@ enum cpu_opcodes {
 	SWP,
 	SWPC,
 
-	HLT	
+	NOP
 };
 
 #endif

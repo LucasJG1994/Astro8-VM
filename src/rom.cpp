@@ -16,12 +16,18 @@ void rom_close(ROM* self) {
 
 void ROM::store(uint16_t instr) {
 	if (IP >= size) return;
-	bytes[IP] = instr;
-	IP += 2;
+	bytes[IP++] = instr << 16;
 }
 
 void ROM::store(uint16_t instr, uint16_t data) {
 	if(IP >= size) return;
-	bytes[IP++] = instr;
-	bytes[IP++] = data;
+	bytes[IP++] = data | ( instr << 16 );
+}
+
+unsigned int ROM::get_IP() {
+	return IP;
+}
+
+void ROM::insert(uint16_t index, uint16_t data) {
+	bytes[index] |= data;
 }

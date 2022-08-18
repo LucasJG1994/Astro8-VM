@@ -4,12 +4,14 @@
 #include <stdint.h>
 
 struct ROM {
-	uint16_t bytes[16382] = { 0 };
+	unsigned int bytes[0xFFFF] = { 0 };
 	unsigned int IP   = 0;
-	size_t size = 16382;
+	size_t size = 0xFFFF;
 
 	void store(uint16_t instr);
 	void store(uint16_t instr, uint16_t data);
+	unsigned int get_IP();
+	void insert(uint16_t index, uint16_t data);
 };
 
 ROM* rom_init();
