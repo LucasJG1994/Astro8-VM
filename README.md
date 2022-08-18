@@ -11,16 +11,16 @@
  **Armstrong is not supported**  
  
 # Assembler Instructions
-N -> number
-A -> register A
-B -> register B
-C -> register C
+N -> number  
+A -> register A  
+B -> register B  
+C -> register C  
 
-ZE -> zero flag
-CA -> carry flag
-CL -> flag is clear
+ZE -> zero flag  
+CA -> carry flag  
+CL -> flag is clear  
 
-IP -> instruction pointer
+IP -> instruction pointer  
 
 1.	NOP				No Operation
 	
