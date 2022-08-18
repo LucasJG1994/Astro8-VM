@@ -13,9 +13,10 @@ typedef uint16_t u16;
 #define PROG_OFFSET 0
 #define CHAR_OFFSET 16383
 #define VAR_OFFSET  16528
-#define VRAM_OFFSET 61439
+#define VRAM_OFFSET 65278
 
 #define CHAR_SIZE 6
+#define VRAM_SIZE 4
 
 enum cpu_masks {
 	OPCODE_MASK = 0x00ff,
@@ -178,11 +179,22 @@ struct History {
 static std::vector<History> history;
 static unsigned char history_index = 0;
 
+static std::vector<u16> STACK;
+#define PUSH(V) STACK.push_back(V)
+#define POP STACK.back(); STACK.pop_back()
+
+static u16 INS[16383] = { 0 };
+static u16 CLS[0xFF][0xFF] = { 0 };
 static u16 RAM[0xFFFF] = { 0 };
 static u16 IP = 0;
+static u16 SP = 0; // Stack Pointer
 static u16 A = 0, B = 0, C = 0;
 static unsigned char flag = 0;
 
+Color palette[2] = {
+	{0, 0, 0},
+	{254, 254, 254}
+};
 
 //Shared Global Variable
 unsigned int ExpansionPort = 0;
@@ -194,7 +206,7 @@ static void GPU();
 #ifndef DEBUG
 void cpu_init(ROM* rom) {
 	if(rom == nullptr) { cs = CPU_HLT; return; }
-	std::memcpy(RAM, rom->bytes, rom->size);
+	std::memcpy(INS, rom->bytes, rom->size);
 #else
 void cpu_init(){
 	//RAM[ CHAR_OFFSET ] = 13;
@@ -209,7 +221,8 @@ void cpu_update() {
 }
 
 static void decoder() {
-	if(IP >= 16382) {
+	for(int i = 0; i < 16; i++){
+	if(IP >= 0xFFFE) {
 		cs = CPU_HLT;
 		std::cout << "CPU has halted...\n";
 		history_index = history.size() - 1;
@@ -227,40 +240,72 @@ static void decoder() {
 
 	history.push_back(hs);
 
-	u16 instruction = RAM[IP++];
+	if(history.size() > 255) history.erase(history.begin());
+
+	u16 instruction = INS[IP++];
 
 	u16 opcode	= instruction & OPCODE_MASK;
 
 	switch (opcode) {
-		case NOP	: break;
-		case AIN	: A = RAM[ RAM[IP++] & LB_MASK ]; break;
-		case BIN	: B = RAM[ RAM[IP++] & LB_MASK ]; break;
-		case CIN	: C = RAM[ RAM[IP++] & LB_MASK ]; break;
-		case LDIA	: A = RAM[IP++] & LB_MASK; break;
-		case LDIB	: B = RAM[IP++] & LB_MASK; break;
-		case RDEXP	: A = key_mapping[ExpansionPort]; IP++; break;
-		case WREXP	: ExpansionPort = A; IP++; break;
-		case STA	: RAM[ RAM[IP++] & LB_MASK ] = A; break;
-		case STC	: RAM[ RAM[IP++] & LB_MASK ] = C; break;
-		case ADD	:
+		case NOP	: IP++; break;
+
+		case AIN	: A = RAM[ INS[IP++] ]; break;
+		case AIN_L	: A = CLS[SP][ INS[IP++] & 0xFF ]; break;
+		case AIN_B	: A = RAM[ INS[IP++] + B ]; break;
+		case AIN_L_B: A = CLS[SP][ (INS[IP++] & 0xFF) + B ]; break;
+		case AIN_C	: A = RAM[ INS[IP++] + C ]; break;
+		case AIN_L_C: A = CLS[SP][ (INS[IP++] & 0xFF) + C ]; break;
+		case BIN	: B = RAM[ INS[IP++] ]; break;
+		case BIN_L	: B = CLS[SP][ INS[IP++] & 0xFF ]; break;
+		case CIN	: C = RAM[ INS[IP++] ]; break;
+		case CIN_L	: C = CLS[SP][ INS[IP++] & 0xFF ]; break;
+
+		case LDIA	: A = INS[IP++]; break;
+		case LDIB	: B = INS[IP++]; break;
+		case LDIC	: C = INS[IP++]; break;
+
+		case INA	: A++; IP++; break;
+		case INB	: B++; IP++; break;
+		case INC	: C++; IP++; break;
+
+		//case RDEXP	: A = key_mapping[ExpansionPort]; IP++; break;
+		//case WREXP	: ExpansionPort = A; IP++; break;
+
+		case STA	: RAM[ INS[IP++] ] = A; break;
+		case STA_L	: CLS[SP][ INS[IP++] & 0xFF ] = A; break;
+		case STA_B	: RAM[ INS[IP++] + B] = A; break;
+		case STA_L_B: CLS[SP][ (INS[IP++] & 0xFF) + B ] = A; break;
+		case STA_C	: RAM[ INS[IP++] + C] = A; break;
+		case STA_L_C: CLS[SP][ (INS[IP++] & 0xFF) + C ] = A; break;
+		case STB	: RAM[ INS[IP++] ] = B; break;
+		case STB_L	: CLS[SP][ INS[IP++] & 0xFF ] = B; break;
+		case STC	: RAM[ INS[IP++] ] = C; break;
+		case STC_L	: CLS[SP][ INS[IP++] & 0xFF ] = C; break;
+
+		case PHA	: PUSH(A); break;
+		case PLA	: A = POP; break;
+		case PHF	: PUSH(flag); break;
+		case PLF	: flag = POP; break;
+
+		case ADD:
 			A += B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
 			IP++;
 			break;
-		case SUB	:
+		case SUB:
 			A -= B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
 			IP++;
 			break;
-		case MULT	:
+		case MULT:
 			A *= B;
 			flag |= (A == 0)	? ZERO: 0;
 			flag |= (A & 0x8000)? CARRY:0;
 			IP++;
 			break;
-		case DIV	:
+		case DIV:
 			flag = 0;
 			if(B == 0){ flag |= ZERO; break;}
 			A /= B;
@@ -268,33 +313,45 @@ static void decoder() {
 			flag |= (A & 0x8000)? CARRY:0;
 			IP++;
 			break;
-		case JMP	: IP = RAM[ IP ] * 2; break;
-		case JMPZ	: IP = (flag & ZERO) ? RAM[ IP ] * 2: IP + 1; break;
-		case JMPC	: IP = (flag & CARRY)? RAM[ IP ] * 2: IP + 1; break;
+
+		case JMP	: IP = INS[ IP ] * 2; break;
+		case JMPZ	: IP = (flag & ZERO) ? INS[ IP ] * 2: IP + 1; break;
+		case JMPC	: IP = (flag & CARRY)? INS[ IP ] * 2: IP + 1; break;
+		case JCLR	: IP = (flag == 0)	 ? INS[ IP ] * 2: IP + 1; break;
 		case JREG	: IP = A * 2; break;
-		case LDAIN	: A = RAM[ A ]; IP++; break;
-		case STAOUT	: RAM[ A ] = B; IP++; break;
-		case LDLGE	: A = RAM[ RAM[ IP++ ] ]; break;
-		case STLGE	: RAM[ RAM[ IP++ ] ] = A; break;
-		case LDW	: A = RAM[ IP++ ]; break;
-		case SWP	:
+
+		case CALL: 
+			SP++; 
+			CLS[SP][ 0 ] = IP + 1;
+			CLS[SP][ 1 ] = flag;
+			IP = INS[ IP ] * 2;
+			break;
+		case RET: 
+			IP = CLS[SP][ 0 ]; 
+			flag = CLS[SP][ 1 ];
+			SP--; 
+			break;
+
+		case SWP:
 			C = A;
 			A = B;
 			B = C;
 			IP++;
 			break;
-		case SWPC	:
+		case SWPC:
 			B = A;
 			A = C;
 			C = B;
 			IP++;
 			break;
+
 		case HLT: 
 			cs = CPU_HLT;
 			std::cout << "CPU has halted...\n";
 			history_index = history.size() - 1;
 			cpu_display();
 			break;
+	}
 	}
 }
 
@@ -305,26 +362,32 @@ static void GPU() {
 
 	for (int i = 0; i < 100; i++) {
 		val = RAM[CHAR_OFFSET + i] % 73;
-		c   = &char_rom[ val * CHAR_SIZE ];
-		int cx = (((i % 10) * 6) + 10 * ((i / 10) * 32));// % 4095;
-		for (int cy = 0; cy < CHAR_SIZE; cy++) {
-			RAM[ VRAM_OFFSET + (cx + 64 * cy) + 0 ] ^= ( c[cy] & 0x01 ) ? 65534 : 0;
-			RAM[ VRAM_OFFSET + (cx + 64 * cy) + 1 ] ^= ( c[cy] & 0x02 ) ? 65534 : 0;
-			RAM[ VRAM_OFFSET + (cx + 64 * cy) + 2 ] ^= ( c[cy] & 0x04 ) ? 65534 : 0;
-			RAM[ VRAM_OFFSET + (cx + 64 * cy) + 3 ] ^= ( c[cy] & 0x08 ) ? 65534 : 0;
-			RAM[ VRAM_OFFSET + (cx + 64 * cy) + 4 ] ^= ( c[cy] & 0x10 ) ? 65534 : 0;
-			RAM[ VRAM_OFFSET + (cx + 64 * cy) + 5 ] ^= ( c[cy] & 0x20 ) ? 65534 : 0;
-		}
+		RAM[ VRAM_OFFSET + ((i % VRAM_SIZE) + VRAM_SIZE * (0 / VRAM_SIZE)) ] ^= char_rom[val * CHAR_SIZE + 0];
+		RAM[ VRAM_OFFSET + ((i % VRAM_SIZE) + VRAM_SIZE * (1 / VRAM_SIZE)) ] ^= char_rom[val * CHAR_SIZE + 1];
+		RAM[ VRAM_OFFSET + ((i % VRAM_SIZE) + VRAM_SIZE * (2 / VRAM_SIZE)) ] ^= char_rom[val * CHAR_SIZE + 2];
+		RAM[ VRAM_OFFSET + ((i % VRAM_SIZE) + VRAM_SIZE * (3 / VRAM_SIZE)) ] ^= char_rom[val * CHAR_SIZE + 3];
+		RAM[ VRAM_OFFSET + ((i % VRAM_SIZE) + VRAM_SIZE * (4 / VRAM_SIZE)) ] ^= char_rom[val * CHAR_SIZE + 4];
+		RAM[ VRAM_OFFSET + ((i % VRAM_SIZE) + VRAM_SIZE * (5 / VRAM_SIZE)) ] ^= char_rom[val * CHAR_SIZE + 5];
 	}
 
-	for (int i = 0; i < (64 * 64); i++) {
-		if(RAM[ VRAM_OFFSET + i ] > 0){
-			val = RAM[ VRAM_OFFSET + i ];
-			col.r = ( val & 0x1f ) * 8;
-			col.g = ( ( val & 0x3e0 ) >> 5 ) * 8;
-			col.b = ( ( val & 0x7c00 ) >> 10 ) * 8;
-			graphics_plot( i % 64, i / 64, col);
-		}
+	for (int i = 0; i < 257; i++) {
+		val = RAM[ VRAM_OFFSET + i ];
+		graphics_plot(((i % VRAM_SIZE) * 16) + 0, i / VRAM_SIZE, palette[(val & 0x0001) >> 0]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 1, i / VRAM_SIZE, palette[(val & 0x0002) >> 1]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 2, i / VRAM_SIZE, palette[(val & 0x0004) >> 2]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 3, i / VRAM_SIZE, palette[(val & 0x0008) >> 3]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 4, i / VRAM_SIZE, palette[(val & 0x0010) >> 4]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 5, i / VRAM_SIZE, palette[(val & 0x0020) >> 5]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 6, i / VRAM_SIZE, palette[(val & 0x0040) >> 6]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 7, i / VRAM_SIZE, palette[(val & 0x0080) >> 7]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 8, i / VRAM_SIZE, palette[(val & 0x0100) >> 8]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 9, i / VRAM_SIZE, palette[(val & 0x0200) >> 9]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 10, i / VRAM_SIZE, palette[(val & 0x0400) >> 10]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 11, i / VRAM_SIZE, palette[(val & 0x0800) >> 11]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 12, i / VRAM_SIZE, palette[(val & 0x1000) >> 12]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 13, i / VRAM_SIZE, palette[(val & 0x2000) >> 13]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 14, i / VRAM_SIZE, palette[(val & 0x4000) >> 14]);
+		graphics_plot(((i % VRAM_SIZE) * 16) + 15, i / VRAM_SIZE, palette[(val & 0x8000) >> 15]);
 	}
 }
 

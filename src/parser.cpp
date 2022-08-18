@@ -1,158 +1,424 @@
 #include "parser.h"
-#include "scanner.h"
 #include "tokens.h"
-#include "String.h"
+#include <queue>
 #include <iostream>
 
 parser_state par_state;
 
-void parser_init() {
-	if (scan_advance() != SCAN_OK) {
-		par_state = PARSER_ERR;
-		return;
-	}
+static std::queue<token>* token_stream;
+static token cur;
+static ROM* rom = rom_init();
+
+void parser_init(std::queue<token>* List) {
+	token_stream = List;
+	cur = token_stream->front();
+	token_stream->pop();
 }
 
 static void parser_adv() {
-	if (scan_advance() != SCAN_OK || par_state != PARSER_OK) {
-		par_state = PARSER_ERR;
-		return;
-	}
+	cur = token_stream->front();
+	token_stream->pop();
 }
 
-static bool parser_match(token_type type) {
-	return S_TYPE == type;
+static bool parser_match(int type) {
+	return cur.type == type;
+}
+
+static void parser_error() {
+	while (token_stream->empty() == 0) {
+		token_stream->pop();
+	}
+	delete token_stream;
+	rom_close(rom);
+
+	std::cout << "Parser Error:\n";
+	std::cout << cur.to_string();
+	throw 0;
+}
+
+static void nop(ROM* rom);
+
+static void ain(ROM* rom);
+static void ain_l(ROM* rom);
+static void bin(ROM* rom);
+static void bin_l(ROM* rom);
+static void cin(ROM* rom);
+static void cin_l(ROM* rom);
+
+static void ldia(ROM* rom);
+static void ldib(ROM* rom);
+static void ldic(ROM* rom);
+
+static void ina(ROM* rom);
+static void inb(ROM* rom);
+static void inc(ROM* rom);
+
+static void rdexp(ROM* rom);
+static void wrexp(ROM* rom);
+
+static void sta(ROM* rom);
+static void sta_l(ROM* rom);
+static void stb(ROM* rom);
+static void stb_l(ROM* rom);
+static void stc(ROM* rom);
+static void stc_l(ROM* rom);
+
+static void pha(ROM* rom);
+static void pla(ROM* rom);
+static void phf(ROM* rom);
+static void plf(ROM* rom);
+
+static void add(ROM* rom);
+static void sub(ROM* rom);
+static void mult(ROM* rom);
+static void div(ROM* rom);
+
+static void jmp(ROM* rom);
+static void jmpz(ROM* rom);
+static void jmpc(ROM* rom);
+static void jclr(ROM* rom);
+static void jreg(ROM* rom);
+
+static void call(ROM* rom);
+static void ret(ROM* rom);
+
+static void swp(ROM* rom);
+static void swpc(ROM* rom);
+
+static void hlt(ROM* rom);
+
+static int get_data() {
+	if (parser_match(ADDR_HEX)) {
+		int data = cur.data;
+		parser_adv();
+		return data;
+	}
+	else if (parser_match(ADDR_DEC)) { 
+		int data = cur.data; 
+		parser_adv();
+		return data;
+	}
+	else parser_error();
 }
 
 ROM* parser_start() {
-	ROM* rom = rom_init();
 	while (!parser_match(T_EOF)) {
-		switch(S_TYPE){
-			case NOP: rom->store(NOP); rom->store(0); parser_adv(); break;
-			case AIN:
-				rom->store(AIN);
-				parser_adv();
-				if(parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if(parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case BIN:
-				rom->store(BIN);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case CIN:
-				rom->store(CIN);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case LDIA:
-				rom->store(LDIA);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case LDIB:
-				rom->store(LDIB);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case RDEXP: rom->store(RDEXP); rom->store(0); parser_adv(); break;
-			case WREXP: rom->store(WREXP); rom->store(0); parser_adv(); break;
-			case STA:
-				rom->store(STA);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case STC:
-				rom->store(STC);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case ADD: rom->store(ADD); rom->store(0); parser_adv(); break;
-			case SUB: rom->store(SUB); rom->store(0); parser_adv(); break;
-			case MULT: rom->store(MULT); rom->store(0); parser_adv(); break;
-			case DIV: rom->store(DIV); rom->store(0); parser_adv(); break;
-			case JMP:
-				rom->store(JMP);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case JMPZ:
-				rom->store(JMPZ);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case JMPC:
-				rom->store(JMPC);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case JREG: rom->store(JREG); rom->store(0); parser_adv(); break;
-			case LDAIN: rom->store(LDAIN); rom->store(0); parser_adv(); break;
-			case STAOUT: rom->store(STAOUT); rom->store(0); parser_adv(); break;
-			case LDLGE:
-				rom->store(LDLGE);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case STLGE:
-				rom->store(STLGE);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case LDW:
-				rom->store(LDW);
-				parser_adv();
-				if (parser_match(ADDR_HEX)) rom->store(S_LEXEME->to_hex());
-				if (parser_match(ADDR_DEC)) rom->store(S_LEXEME->to_int());
-				parser_adv();
-				break;
-			case SWP: rom->store(SWP); rom->store(0); parser_adv(); break;
-			case SWPC: rom->store(SWPC); rom->store(0); parser_adv(); break;
-			case HLT: rom->store(HLT); rom->store(0); parser_adv(); break;
-			case SET:{
-				int addr, data;
-				parser_adv();
+		switch(cur.type){
+			case NOP: nop(rom); break;
 
-				if (parser_match(ADDR_HEX)) addr = S_LEXEME->to_hex();
-				if (parser_match(ADDR_DEC)) addr = S_LEXEME->to_int();
-				parser_adv();
+			case AIN: ain(rom); break;
+			case AIN_L: ain_l(rom); break;
+			case BIN: bin(rom); break;
+			case BIN_L: bin_l(rom); break;
+			case CIN: cin(rom); break;
+			case CIN_L: cin_l(rom); break;
 
-				if (parser_match(ADDR_HEX)) data = S_LEXEME->to_hex();
-				if (parser_match(ADDR_DEC)) data = S_LEXEME->to_int();
-				parser_adv();
+			case LDIA: ldia(rom); break;
+			case LDIB: ldib(rom); break;
+			case LDIC: ldic(rom); break;
 
-				rom->store(addr, data);
-				break;
-			}
-			default: {
-				std::cout << "Parser Error... " << S_LINE << " " << " " << S_TYPE << std::endl;
-				rom_close(rom);
-				return nullptr;
-			}
+			case INA: ina(rom); break;
+			case INB: inb(rom); break;
+			case INC: inc(rom); break;
+
+			case RDEXP: rdexp(rom); break;
+			case WREXP: wrexp(rom); break;
+
+			case STA: sta(rom); break;
+			case STA_L: sta_l(rom); break;
+			case STB: stb(rom); break;
+			case STB_L: stb_l(rom); break;
+			case STC: stc(rom); break;
+			case STC_L: stc_l(rom); break;
+
+			case PHA: pha(rom); break;
+			case PLA: pla(rom); break;
+			case PHF: phf(rom); break;
+			case PLF: plf(rom); break;
+
+			case ADD: add(rom); break;
+			case SUB: sub(rom); break;
+			case MULT: mult(rom); break;
+			case DIV: div(rom); break;
+
+			case JMP: jmp(rom); break;
+			case JMPZ: jmpz(rom); break;
+			case JMPC: jmpc(rom); break;
+			case JCLR: jclr(rom); break;
+			case JREG: jreg(rom); break;
+
+			case CALL: call(rom); break;
+			case RET: ret(rom); break;
+
+			case SWP: swp(rom); break;
+			case SWPC: swpc(rom); break;
+
+			case HLT: hlt(rom); break;
+			default: parser_error();
 		}
 	}
 	return rom;
+}
+
+static void nop(ROM* rom) {
+	parser_adv();
+	rom->store(NOP);
+}
+
+static void ain(ROM* rom) {
+	parser_adv();
+	int data = get_data();
+
+	if (parser_match(COMMA)) {
+		parser_adv();
+
+		if (parser_match(REG_B)) {
+			parser_adv();
+			rom->store(AIN_B, data);
+		}
+		else if (parser_match(REG_C)) {
+			parser_adv();
+			rom->store(AIN_C, data);
+		}
+		else parser_error();
+		return;
+	}
+
+	rom->store(AIN, data);
+}
+
+static void ain_l(ROM* rom) {
+	parser_adv();
+	int data = get_data();
+
+	if (parser_match(COMMA)) {
+		parser_adv();
+
+		if (parser_match(REG_B)) {
+			parser_adv();
+			rom->store(AIN_L_B, data);
+		}
+		else if (parser_match(REG_C)) {
+			parser_adv();
+			rom->store(AIN_L_C, data);
+		}
+		else parser_error();
+		return;
+	}
+
+	rom->store(AIN_L, data);
+}
+
+static void bin(ROM* rom) {
+	parser_adv();
+	rom->store(BIN, get_data());
+}
+
+static void bin_l(ROM* rom) {
+	parser_adv();
+	rom->store(BIN_L, get_data());
+}
+
+static void cin(ROM* rom) {
+	parser_adv();
+	rom->store(CIN, get_data());
+}
+
+static void cin_l(ROM* rom) {
+	parser_adv();
+	rom->store(CIN_L, get_data());
+}
+
+static void ldia(ROM* rom) {
+	parser_adv();
+	rom->store(LDIA, get_data());
+}
+
+static void ldib(ROM* rom) {
+	parser_adv();
+	rom->store(LDIB, get_data());
+}
+
+static void ldic(ROM* rom) {
+	parser_adv();
+	rom->store(LDIC, get_data());
+}
+
+static void ina(ROM* rom) {
+	parser_adv();
+	rom->store(INA);
+}
+
+static void inb(ROM* rom) {
+	parser_adv();
+	rom->store(INB);
+}
+
+static void inc(ROM* rom) {
+	parser_adv();
+	rom->store(INC);
+}
+
+static void rdexp(ROM* rom) {
+	parser_adv();
+	rom->store(RDEXP);
+}
+
+static void wrexp(ROM* rom) {
+	parser_adv();
+	rom->store(WREXP);
+}
+
+static void sta(ROM* rom) {
+	parser_adv();
+	int data = get_data();
+
+	if (parser_match(COMMA)) {
+		parser_adv();
+
+		if (parser_match(REG_B)) {
+			parser_adv();
+			rom->store(STA_B, data);
+		}
+		else if (parser_match(REG_C)) {
+			parser_adv();
+			rom->store(STA_C, data);
+		}
+		else parser_error();
+		return;
+	}
+
+	rom->store(STA, data);
+}
+
+static void sta_l(ROM* rom) {
+	parser_adv();
+	int data = get_data();
+
+	if (parser_match(COMMA)) {
+		parser_adv();
+
+		if (parser_match(REG_B)) {
+			parser_adv();
+			rom->store(STA_L_B, data);
+		}
+		else if (parser_match(REG_C)) {
+			parser_adv();
+			rom->store(STA_L_C, data);
+		}
+		else parser_error();
+		return;
+	}
+
+	rom->store(STA_L, data);
+}
+
+static void stb(ROM* rom) {
+	parser_adv();
+	rom->store(STB, get_data());
+}
+
+static void stb_l(ROM* rom) {
+	parser_adv();
+	rom->store(STB_L, get_data());
+}
+
+static void stc(ROM* rom) {
+	parser_adv();
+	rom->store(STC, get_data());
+}
+
+static void stc_l(ROM* rom) {
+	parser_adv();
+	rom->store(STC_L, get_data());
+}
+
+static void pha(ROM* rom) {
+	parser_adv();
+	rom->store(PHA);
+}
+
+static void pla(ROM* rom) {
+	parser_adv();
+	rom->store(PLA);
+}
+
+static void phf(ROM* rom) {
+	parser_adv();
+	rom->store(PHF);
+}
+
+static void plf(ROM* rom) {
+	parser_adv();
+	rom->store(PLF);
+}
+
+static void add(ROM* rom) {
+	parser_adv();
+	rom->store(ADD);
+}
+
+static void sub(ROM* rom) {
+	parser_adv();
+	rom->store(SUB);
+}
+
+static void mult(ROM* rom) {
+	parser_adv();
+	rom->store(MULT);
+}
+
+static void div(ROM* rom) {
+	parser_adv();
+	rom->store(DIV);
+}
+
+static void jmp(ROM* rom) {
+	parser_adv();
+	rom->store(JMP, get_data());
+}
+
+static void jmpz(ROM* rom) {
+	parser_adv();
+	rom->store(JMPZ, get_data());
+}
+
+static void jmpc(ROM* rom) {
+	parser_adv();
+	rom->store(JMPC, get_data());
+}
+
+static void jclr(ROM* rom) {
+	parser_adv();
+	rom->store(JCLR, get_data());
+}
+
+static void jreg(ROM* rom) {
+	parser_adv();
+	rom->store(JREG);
+}
+
+static void call(ROM* rom) {
+	parser_adv();
+	rom->store(CALL, get_data());
+}
+
+static void ret(ROM* rom) {
+	parser_adv();
+	rom->store(RET);
+}
+
+static void swp(ROM* rom) {
+	parser_adv();
+	rom->store(SWP);
+}
+
+static void swpc(ROM* rom) {
+	parser_adv();
+	rom->store(SWPC);
+}
+
+static void hlt(ROM* rom) {
+	parser_adv();
+	rom->store(HLT);
 }

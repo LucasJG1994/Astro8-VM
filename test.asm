@@ -1,15 +1,13 @@
-;This is a comment
-set 0d28 0d65534
-ldw 0d65534
-stlge 0d16529
-ldw 0d61439
-stlge 0d16539
-ldlge 0d16529
-swp
-ldlge 0d16539
-staout
-ldib 0d1
-ldlge 0d16539
-add
-stlge 0d16539
-jmp 0d4
+;setup variable
+ldib 0d0
+ldia 0d13
+sta  0d0
+
+;loop
+ain 0d0
+sta 0d65278, b
+inb
+ldia 0d256
+sub
+jclr 0d3
+hlt

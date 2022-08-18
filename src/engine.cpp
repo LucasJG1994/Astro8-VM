@@ -5,6 +5,7 @@
 #include "scanner.h"
 #include "parser.h"
 #include <SDL.h>
+#include <queue>
 #include <iostream>
 
 extern unsigned int ExpansionPort;
@@ -24,14 +25,26 @@ void engine_init(const char* file_name) {
 
 	std::cout << "Loaded file...\n";
 
+	std::queue<token>* token_stream;
+	ROM* rom;
 	scan_init(f);
-	parser_init();
+	try{ 
+		token_stream = scan_tokenize();
 
-	std::cout << "Init scanner and parser...\n";
+		std::cout << "Scanner Done...\n";
 
-	ROM* rom = parser_start();
+		parser_init(token_stream);
+		rom = parser_start();
 
-	std::cout << "Created Rom...\n";
+		std::cout << "Parser Done...\n";
+		std::cout << "Created Rom...\n";
+	}
+	catch(int){
+		token_stream = nullptr;
+		rom = nullptr;
+	}
+
+	
 #else
 void engine_init(){
 	

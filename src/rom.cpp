@@ -11,14 +11,17 @@ ROM* rom_init() {
 void rom_close(ROM* self) {
 	if(self == nullptr) return;
 	delete self;
+	self = nullptr;
 }
 
-void ROM::store(uint16_t data) {
-	if (DP < size) {
-		bytes[DP++] = data;
-	}
+void ROM::store(uint16_t instr) {
+	if (IP >= size) return;
+	bytes[IP] = instr;
+	IP += 2;
 }
 
-void ROM::store(uint16_t addr, uint16_t data) {
-	bytes[addr] = data;
+void ROM::store(uint16_t instr, uint16_t data) {
+	if(IP >= size) return;
+	bytes[IP++] = instr;
+	bytes[IP++] = data;
 }
