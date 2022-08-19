@@ -8,6 +8,12 @@
  ```
  within the directory the .exe file resides in.  
  
+ **The VM will call "main" at the start of execution. Thus your entry point is always at label "main"**
+ ```
+ main
+     hlt
+ ```
+ 
  **Armstrong is not supported**  
  
 # Assembler Instructions
