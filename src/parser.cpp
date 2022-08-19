@@ -1,9 +1,9 @@
 #include "parser.h"
 #include "tokens.h"
+#include "debug.h"
 #include <queue>
 #include <map>
 #include <stack>
-#include <iostream>
 
 parser_state par_state;
 
@@ -13,13 +13,37 @@ static std::map<std::string, std::stack<int>> undef_labels;
 static token cur;
 static ROM* rom = rom_init();
 
+static void parser_label_log() {
+	debug_log("PARSAER_LOG");
+
+	debug_log("UNDEFINED LABELS");
+	auto it_1 = undef_labels.begin();
+	while (it_1 != undef_labels.end()) {
+		debug_log(it_1->first);
+		it_1++;
+	}
+
+	debug_log("DEFINED LABELS");
+	auto it_2 = def_labels.begin();
+	while (it_2 != def_labels.end()) {
+		debug_log(it_2->first);
+		it_2++;
+	}
+}
+
 void parser_init(std::queue<token>* List) {
 	token_stream = List;
 	cur = token_stream->front();
 	token_stream->pop();
+
+	std::stack<int> IPs;
+	IPs.push(0);
+	undef_labels["main"] = IPs;
+	rom->store(JMP, 0);
 }
 
 static void parser_adv() {
+	if(token_stream->empty()) return;
 	cur = token_stream->front();
 	token_stream->pop();
 }
@@ -39,12 +63,13 @@ static void parser_error() {
 	delete token_stream;
 	rom_close(rom);
 
-	std::cout << "Parser Error:\n";
-	std::cout << cur.to_string();
+	debug_log("Parser Error:");
+	debug_log(cur.to_string());
 	throw 0;
 }
 
 static void parser_consume(int type) {
+	if(token_stream->empty()) return;
 	if (parser_match(type)) parser_adv();
 	else parser_error();
 }
@@ -124,7 +149,7 @@ static int get_data() {
 }
 
 ROM* parser_start() {
-	while (!parser_match(T_EOF)) {
+	while (!parser_match(T_EOF) || !token_stream->empty()) {
 		switch(cur.type){
 			case LABEL: label(rom); break;
 
@@ -178,9 +203,16 @@ ROM* parser_start() {
 			case SWPC: swpc(rom); break;
 
 			case HLT: hlt(rom); break;
+
+			case T_EOF: parser_adv(); break;
 			default: parser_error();
 		}
 	}
+
+	while (token_stream->empty() == 0) token_stream->pop();
+
+	delete token_stream;
+	parser_label_log();
 	return rom;
 }
 

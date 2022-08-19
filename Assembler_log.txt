@@ -1,0 +1,158 @@
+Loaded file...
+TYPE: 57
+LEX: draw_color
+LINE: 2
+
+TYPE: 56
+LEX: =
+LINE: 2
+
+TYPE: 54
+LEX: 
+LINE: 2
+
+TYPE: 57
+LEX: draw_screen
+LINE: 3
+
+TYPE: 56
+LEX: =
+LINE: 3
+
+TYPE: 54
+LEX: 
+LINE: 3
+
+TYPE: 57
+LEX: draw
+LINE: 5
+
+TYPE: 30
+LEX: pla
+LINE: 6
+
+TYPE: 20
+LEX: sta.l
+LINE: 7
+
+TYPE: 57
+LEX: draw_color
+LINE: 7
+
+TYPE: 57
+LEX: draw_while0
+LINE: 9
+
+TYPE: 2
+LEX: ain.l
+LINE: 10
+
+TYPE: 57
+LEX: draw_color
+LINE: 10
+
+TYPE: 19
+LEX: sta
+LINE: 11
+
+TYPE: 57
+LEX: draw_screen
+LINE: 11
+
+TYPE: 55
+LEX: ,
+LINE: 11
+
+TYPE: 51
+LEX: b
+LINE: 11
+
+TYPE: 15
+LEX: inb
+LINE: 12
+
+TYPE: 11
+LEX: ldia
+LINE: 13
+
+TYPE: 54
+LEX: 
+LINE: 13
+
+TYPE: 34
+LEX: sub
+LINE: 14
+
+TYPE: 44
+LEX: jclr
+LINE: 15
+
+TYPE: 57
+LEX: draw_while0
+LINE: 15
+
+TYPE: 47
+LEX: ret
+LINE: 16
+
+TYPE: 58
+LEX: 
+LINE: 0
+
+TYPE: 57
+LEX: main
+LINE: 4
+
+TYPE: 11
+LEX: ldia
+LINE: 5
+
+TYPE: 54
+LEX: 
+LINE: 5
+
+TYPE: 29
+LEX: pha
+LINE: 6
+
+TYPE: 46
+LEX: call
+LINE: 7
+
+TYPE: 57
+LEX: draw
+LINE: 7
+
+TYPE: 0
+LEX: hlt
+LINE: 8
+
+TYPE: 57
+LEX: h
+LINE: 9
+
+TYPE: 58
+LEX: 
+LINE: 0
+
+Scanner Done...
+PARSAER_LOG
+UNDEFINED LABELS
+DEFINED LABELS
+draw
+draw_color
+draw_screen
+draw_while0
+h
+main
+Parser Done...
+Created Rom...
+Init graphics...
+CPU has halted...
+====================================
+REG: 0 , 256 , 0
+IP: 13
+FLAG: 0
+EXP: 168
+====================================
+Engine closed successfully...

@@ -4,9 +4,9 @@
 #include "file.h"
 #include "scanner.h"
 #include "parser.h"
+#include "debug.h"
 #include <SDL.h>
 #include <queue>
-#include <iostream>
 
 extern unsigned int ExpansionPort;
 
@@ -16,14 +16,15 @@ cpu_state cs;
 
 #ifndef DEBUG
 void engine_init(const char* file_name) {
+	debug_init();
 	file* f = file_load(file_name);
 
 	if (f == nullptr) {
-		std::cout << "Unable to load file...\n";
+		debug_log("Unable to load file...");
 		exit(0);
 	}
 
-	std::cout << "Loaded file...\n";
+	debug_log("Loaded file...");
 
 	std::queue<token>* token_stream;
 	ROM* rom;
@@ -31,15 +32,17 @@ void engine_init(const char* file_name) {
 	try{ 
 		token_stream = scan_tokenize();
 
-		std::cout << "Scanner Done...\n";
+		scan_log();
+
+		debug_log("Scanner Done...");
 
 		parser_init(token_stream);
 		rom = parser_start();
 
-		std::cout << "Parser Done...\n";
-		std::cout << "Created Rom...\n";
+		debug_log("Parser Done...");
+		debug_log("Created Rom...");
 	}
-	catch(int){
+	catch(int c){
 		token_stream = nullptr;
 		rom = nullptr;
 	}
@@ -52,7 +55,7 @@ void engine_init(){
 
 	graphics_init();
 
-	std::cout << "Init graphics...\n";
+	debug_log("Init graphics...");
 
 	cs = CPU_OK;
 
@@ -92,5 +95,6 @@ engine_state engine_update() {
 void engine_close() {
 	graphics_close();
 	
-	std::cout << "Engine closed successfully\n";
+	debug_log("Engine closed successfully...");
+	debug_close();
 }

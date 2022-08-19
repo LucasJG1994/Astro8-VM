@@ -11,5 +11,6 @@ enum scanner_state {
 
 void scan_init(file* f);
 std::queue<token>* scan_tokenize();
+void scan_log();
 
 #endif

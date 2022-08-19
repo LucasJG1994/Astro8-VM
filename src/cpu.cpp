@@ -1,8 +1,8 @@
 #include "cpu.h"
 #include "cpu_opcodes.h"
 #include "graphics.h"
+#include "debug.h"
 #include <stdint.h>
-#include <iostream>
 #include <stdint.h>
 #include <SDL.h>
 #include <map>
@@ -206,7 +206,7 @@ static void GPU();
 #ifndef DEBUG
 void cpu_init(ROM* rom) {
 	if(rom == nullptr) { cs = CPU_HLT; return; }
-	std::memcpy(INS, rom->bytes, rom->size);
+	std::memcpy(INS, rom->bytes, rom->size - 1);
 #else
 void cpu_init(){
 	//RAM[ CHAR_OFFSET ] = 13;
@@ -224,7 +224,7 @@ static void decoder() {
 	for(int i = 0; i < 16; i++){
 	if(IP >= 0xFFFE) {
 		cs = CPU_HLT;
-		std::cout << "CPU has halted...\n";
+		debug_log("CPU has halted...");
 		history_index = history.size() - 1;
 		cpu_display();
 		return;
@@ -362,7 +362,7 @@ static void decoder() {
 
 		case HLT: {
 			cs = CPU_HLT;
-			std::cout << "CPU has halted...\n";
+			debug_log("CPU has halted...");
 			history_index = history.size() - 1;
 			cpu_display();
 			return;
@@ -416,10 +416,10 @@ void cpu_next() {
 }
 
 void cpu_display() {
-	std::cout << "\n====================================\n";
-	std::cout << "REG: " << history[history_index].A << " , " << history[history_index].B << " , " << history[history_index].C <<std::endl;
-	std::cout << "IP: " << history[history_index].IP << std::endl;
-	std::cout << "FLAG: " << (int)history[history_index].flag << std::endl;
-	std::cout << "EXP: " << history[history_index].ExpansionPort << std::endl;
-	std::cout << "\n====================================\n";
+	debug_log("====================================");
+	debug_log("REG: " + std::to_string(history[history_index].A) + " , " + std::to_string(history[history_index].B) + " , " + std::to_string(history[history_index].C));
+	debug_log("IP: " + std::to_string(history[history_index].IP));
+	debug_log("FLAG: " + std::to_string((int)history[history_index].flag));
+	debug_log("EXP: " + std::to_string(history[history_index].ExpansionPort));
+	debug_log("====================================");
 }
