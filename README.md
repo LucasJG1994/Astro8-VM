@@ -107,5 +107,13 @@ HLT ==> Stop Execution
  ;This is a comment
  ```
  
+ **Labels**
+ ```
+ foo ;This is a label
+ test = 0x00 ; Assign address 0x00 to label "test"
+ ```
  
- 
+ **Include files**
+ ```
+ .include "filename.asm"
+ ```
